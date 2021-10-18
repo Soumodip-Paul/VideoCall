@@ -1,0 +1,69 @@
+const express = require('express')
+const router = express.Router()
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs')
+const User = require('../schema/UserSchema')
+const verifyToken = require('../middleware/VerifyToken')
+const { sign } = require('../config/sign')
+const { validationResult } = require('express-validator')
+const { signupValidator, loginValidator } = require("../middleware/Validator")
+
+//ROUTE 1: Endpoint for user signup ||POST: /api/auth/signup
+router.post('/signup', signupValidator, async (req, res) => {
+    const errors = validationResult(req)
+    const { name, email, password } = req.body
+    if (!errors.isEmpty()) {
+        return res.status(404).json({ error: errors.array() })
+    }
+    try {
+        let user = await User.findOne({ email })
+
+        if (user) { return res.status(400).json({ error: "User with email already exists" }) }
+
+        const salt = await bcrypt.genSalt(10)
+        const hashPassword = await bcrypt.hash(password, salt)
+
+        user = await User.create({ name, email, password: hashPassword })
+        const authToken = jwt.sign({ id: user.id }, sign)
+        res.status(200).json({ authToken })
+
+    } catch (error) {
+        res.status(500).send("Internal Server error...")
+        console.log(error);
+    }
+})
+
+// ROUTE 2: endpoint for user login ||POST : /api/auth/login
+
+router.post('/login', loginValidator, async (req, res) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) { return res.status(400).json({ error: errors.array() }) }
+    const { email, password } = req.body
+    try {
+        const user = await User.findOne({ email })
+        if (!user) { return res.status(400).send("Please login with a valid email and password") }
+        const checkPass = await bcrypt.compare(password, user.password)
+        if (!checkPass) { return res.status(400).send("Please login with a valid email and password") }
+
+        const authToken = jwt.sign({ id: user.id }, sign)
+        res.status(200).json({ authToken })
+
+    } catch (error) {
+        res.status(500).send("Internal Server error...")
+        console.log(error);
+    }
+})
+
+// ROUTE 3: endpoint to get user data | POST: /api/auth/user
+
+router.post('/user', verifyToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.id).select("-password");
+        res.send(user);
+    } catch (error) {
+        res.status(500).send("Internal server error")
+        console.log(error)
+    }
+})
+
+module.exports = router;
