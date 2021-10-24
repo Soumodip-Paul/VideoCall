@@ -15,6 +15,10 @@ const userSchema = new Schema({
         type: String,
         required: true
     },
+    socket_id: {
+        type: String,
+        default: null
+    },
     date: {
         type: Date,
         default: Date.now

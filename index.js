@@ -11,6 +11,9 @@ app.use('/api/auth', require('./routes/auth'))
 app.get('/main.js', (req,res) => {
     res.sendFile(__dirname + '/public/main.js')
 })
+app.get('/style.css', (req,res) => {
+    res.sendFile(__dirname + '/public/style.css')
+})
 app.get('/simplepeer.min.js', (req,res) => {
     res.sendFile(__dirname + '/node_modules/simple-peer/simplepeer.min.js')
 })
@@ -19,7 +22,7 @@ app.get('/*', (req,res) => {
 })
 
 const httpServer = http.createServer(app)
-require('./socket/io')(httpServer)
+require('./socket/socketCaller')(httpServer)
 httpServer.listen(4000, () => {
     console.log("listening to port 4000")
 })

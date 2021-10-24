@@ -16,4 +16,13 @@ const verifyToken = (req,res,next) => {
     }
 }
 
-module.exports = verifyToken
+const verify = (token) => {
+    try {
+        const data = jwt.verify(token, sign)
+        return data.id
+    } catch (error) {
+        return null
+    }
+}
+
+module.exports = {verifyToken, verify}

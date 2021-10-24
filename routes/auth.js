@@ -3,10 +3,10 @@ const router = express.Router()
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
 const User = require('../schema/UserSchema')
-const verifyToken = require('../middleware/VerifyToken')
 const { sign } = require('../config/sign')
+const { verifyToken } = require('../middleware/VerifyToken')
 const { validationResult } = require('express-validator')
-const { signupValidator, loginValidator } = require("../middleware/Validator")
+const { signupValidator, loginValidator, resetPasswordValidator } = require("../middleware/Validator")
 
 //ROUTE 1: Endpoint for user signup ||POST: /api/auth/signup
 router.post('/signup', signupValidator, async (req, res) => {
@@ -54,12 +54,36 @@ router.post('/login', loginValidator, async (req, res) => {
     }
 })
 
-// ROUTE 3: endpoint to get user data | POST: /api/auth/user
+// ROUTE 3: endpoint to get user data || POST: /api/auth/user
 
 router.post('/user', verifyToken, async (req, res) => {
     try {
         const user = await User.findById(req.id).select("-password");
+        if (!user) { return res.status(401).send("Not allowed") }
         res.send(user);
+    } catch (error) {
+        res.status(500).send("Internal server error")
+        console.log(error)
+    }
+})
+
+// ROUTE 4: endpoint for forget password link || POST: /api/auth/resetpassword
+router.post('/resetpassword',resetPasswordValidator , verifyToken, async (req, res) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty) { return res.status(400).json(errors.array()) }
+    try {
+        let user = await User.findById(req.id)
+        if (!user) { return res.status(401).send("Not allowed") }
+        const { password, newPassword, confirmNewPassword } = req.body
+
+        const checkPass = await bcrypt.compare(password, user.password)
+        if (!checkPass) { res.status(400).send('invalid request') }
+
+        const salt = await bcrypt.genSalt(10)
+        const hashPass = await bcrypt.hash(newPassword,salt)
+
+        user =await User.findByIdAndUpdate(req.id, {$set: {password: hashPass}}, {new: false})
+        res.status(200).send("Password Updated")
     } catch (error) {
         res.status(500).send("Internal server error")
         console.log(error)

@@ -10,4 +10,15 @@ const loginValidator = [
     body('password', 'Enter a password').exists()
 ]
 
-module.exports = { signupValidator, loginValidator }
+const resetPasswordValidator = [
+    body('newPassword', 'This field cannot be empty').isStrongPassword(),
+    body('confirmNewPassword', 'This field cannot be empty').custom((value, { req }) => {
+        if (value !== req.body.newPassword) {
+          throw new Error('Password confirmation does not match password');
+        }
+        // Indicates the success of this synchronous custom validator
+        return true;
+      })
+]
+
+module.exports = { signupValidator, loginValidator, resetPasswordValidator }
