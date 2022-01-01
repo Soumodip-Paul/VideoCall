@@ -26,16 +26,16 @@ module.exports = (httpServer) => {
             try {
                 const verifyToken = verify(token)
                 if (!verifyToken) {
-                    socket.send('You are not a valid user')
+                    socket.send({code : 1 , msg: 'You are not a valid user'})
                     return
                 }
                 const user = await User.findByIdAndUpdate(verifyToken, { $set: { socket_id: socket.id } }, { new: false })
                 if (!user) {
-                    socket.send('You are not a valid user')
+                    socket.send({code : 1 , msg: 'You are not a valid user'})
                     return;
                 }
                 else {
-                    socket.send('Successfully logged in')
+                    socket.send({code : 0 , msg: 'Successfully logged in'})
                 }
             } catch (error) {
                 console.log(error);
@@ -45,10 +45,11 @@ module.exports = (httpServer) => {
             try {
                 const reciever = await User.findOne({ email })
                 if (!reciever) {
-                    socket.emit('no-user', 'No user with this email available')
+                    socket.send('no-user', 'No user with this email available')
                     return;
                 }
                 if (reciever.socket_id) socket.to(reciever.socket_id).emit('calling', socket.id, signal)
+                else socket.send("User is offline")
 
             } catch (error) {
                 console.log(error)

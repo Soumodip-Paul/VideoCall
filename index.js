@@ -8,21 +8,14 @@ mongo()
 app.use(express.json())
 app.use('/api/auth', require('./routes/auth'))
 
-app.get('/main.js', (req,res) => {
-    res.sendFile(__dirname + '/public/main.js')
-})
-app.get('/style.css', (req,res) => {
-    res.sendFile(__dirname + '/public/style.css')
-})
+app.use(express.static(__dirname+'/public'))
+
 app.get('/simplepeer.min.js', (req,res) => {
     res.sendFile(__dirname + '/node_modules/simple-peer/simplepeer.min.js')
 })
-app.get('/*', (req,res) => {
-    res.sendFile(__dirname + '/public/index.html')
-})
 
 const httpServer = http.createServer(app)
-require('./socket/socketCaller')(httpServer)
+require('./socket/io')(httpServer)
 httpServer.listen(4000, () => {
     console.log("listening to port 4000")
 })
